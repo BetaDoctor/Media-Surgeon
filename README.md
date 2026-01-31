@@ -16,17 +16,16 @@ MediaSurgeon is a self-contained, web-based video downloader that uses intellige
 - **🎨 Custom Styling**: Tailwind CSS-powered responsive design
 
 ---
-
 ## 🎯 Supported Sites
 
-| Site | Max Quality | Features |
-|------|-------------|----------|
-| **xHamster** | 4K/8K | Anonymous access to premium formats |
-| **Pornhub** | 4K | Chrome impersonation for format unlocking |
-| **xVideos** | 1080p | Clean extraction with fragment retry |
-| **xNXX** | 1080p | Cloudflare bypass, full browser headers |
-| **YouPorn** | 1080p | Full browser impersonation |
-| **General Fallback** | Varies | Universal extraction for any site |
+MediaSurgeon will automatically detect the site and find the best available resolution:
+
+- **xHamster**
+- **Pornhub**
+- **xVideos**
+- **xNXX**
+- **YouPorn**
+- **General Fallback** - Universal extraction for some sites (if you're lucky, needs more work)
 
 ---
 
@@ -130,7 +129,7 @@ MediaSurgeon/
 This will:
 1. Launch the web interface in your browser (`http://localhost:8080`)
 2. Start the WebSocket bridge on port 8080
-3. Open a command window showing real-time activity
+3. Open a command window showing real-time activity (collapsed by default)
 
 ---
 
@@ -140,9 +139,8 @@ This will:
 2. **Paste a video URL** in the web interface
 3. MediaSurgeon automatically **detects the site** and uses the appropriate specialist
 4. **View available formats** (resolutions, file sizes)
-5. **Click download** to start extraction
+5. **Click download** to start extraction (a Downloads folder we be created in the root of the project)
 6. **Watch progress** in real-time (fragment counts, percentage)
-7. **Find your video** in the `MediaSurgeon` folder when complete
 
 ---
 
@@ -168,19 +166,6 @@ Each supported site has a custom "specialist" (JavaScript module) that:
 - Maximizes success rate and video quality
 - Falls back to general specialist for unknown sites
 
-### Example: xHamster Specialist
-
-```javascript
-// Bypasses Cloudflare protection
-// Enables 4K/8K anonymous access
-// Uses proven working flags
-getAuditCommand: (url) => {
-    return `yt-dlp --impersonate chrome --no-check-certificates ...`;
-}
-```
-
----
-
 ## 🛠️ Troubleshooting
 
 ### "Command not found" or "Not recognized"
@@ -201,7 +186,7 @@ getAuditCommand: (url) => {
 ### Download Stalls at 99%
 - This is normal for fragment-based downloads
 - ffmpeg is merging fragments in the background
-- Wait 30-60 seconds - it will complete
+- Wait a few seconds - it will complete (check console output)
 
 ---
 
