@@ -23,7 +23,7 @@ MediaSurgeon will automatically detect the site and find the best available reso
 - **xHamster**
 - **Pornhub**
 - **xVideos**
-- **xNXX**
+- **XNXX**
 - **YouPorn**
 - **General Fallback** - Universal extraction for some sites (if you're lucky, needs more work)
 
@@ -102,7 +102,7 @@ MediaSurgeon/
 │   ├── ffprobe.exe         ✅ Download this
 │   ├── websocketd.exe      ✅ Download this
 │   ├── yt-dlp.exe          ✅ Download this
-│   └── temp/               (created automatically)
+│   └── temp/               (create manually and grant users write permission)
 ├── lib/
 │   ├── tailwindcss.exe     ⚠️ Optional (dev only)
 │   ├── favicon.svg
