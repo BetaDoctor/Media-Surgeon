@@ -85,7 +85,7 @@ MediaSurgeon/
 │   ├── ffmpeg.exe          ✅ Download this
 │   ├── websocketd.exe      ✅ Download this
 │   ├── yt-dlp.exe          ✅ Download this
-│   └── temp/               (created automatically)
+│   └── temp/               (CREATE THIS FOLDER YOURSELF AQND GRABT USERS WRITE ACCESS !!)
 ├── lib/
 │   ├── favicon.svg
 │   ├── logo.svg
