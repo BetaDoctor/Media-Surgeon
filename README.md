@@ -118,11 +118,11 @@ This will:
 ## 💡 Usage
 
 1. **Start the application** by running `media_surgeon.bat`
-2. **Paste a video URL** in the web interface
-3. MediaSurgeon automatically **detects the site** and uses the appropriate specialist
-4. **View available formats** (resolutions, file sizes)
+2. Copy a video page URL and hit PASTE URL
+3. Hit the ANALYZE button and MediaSurgeon automatically **detects the site** and uses the appropriate specialist
+4. MediaSurgeon will always load the highest resolution available.
 5. **Click download** to start extraction (a Downloads folder will be created in the root of the project)
-6. **Watch progress** in real-time (fragment counts, percentage)
+6. **Watch progress** in real-time (expand the console log at the bottom) 
 
 ---
 
