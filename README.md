@@ -31,7 +31,7 @@ MediaSurgeon will automatically detect the site and find the best available reso
 
 ## 📋 Prerequisites
 
-MediaSurgeon requires **4 executable tools** to function. These are **NOT included** in this repository due to their large file sizes (400+ MB total).
+MediaSurgeon requires **3 executable tools** to function. These are **NOT included** in this repository due to their large file sizes (~215 MB total).
 
 ### Required Downloads
 
@@ -43,21 +43,14 @@ MediaSurgeon requires **4 executable tools** to function. These are **NOT includ
 - **Location**: Place in `bin/` folder
 
 #### 2. **FFmpeg** (Video Processor)
-- **Purpose**: Video encoding/processing
+- **Purpose**: Video encoding/processing and fragment merging
 - **Size**: ~190 MB
 - **Download**: [https://github.com/BtbN/FFmpeg-Builds/releases](https://github.com/BtbN/FFmpeg-Builds/releases)
 - **Get**: Download `ffmpeg-master-latest-win64-gpl.zip`
 - **Extract**: `ffmpeg.exe` from the zip
 - **Location**: Place in `bin/` folder
 
-#### 3. **FFprobe** (Video Analysis)
-- **Purpose**: Analyzes video streams
-- **Size**: ~190 MB
-- **Included**: In the same FFmpeg download as above
-- **Extract**: `ffprobe.exe` from the zip
-- **Location**: Place in `bin/` folder
-
-#### 4. **websocketd** (WebSocket Bridge)
+#### 3. **websocketd** (WebSocket Bridge)
 - **Purpose**: Bridges browser and command-line tools
 - **Size**: ~7.5 MB
 - **Download**: [https://github.com/joewalnes/websocketd/releases](https://github.com/joewalnes/websocketd/releases)
@@ -80,7 +73,7 @@ Or download as ZIP and extract.
 
 ### Step 2: Download Required Executables
 
-Download the 4 required tools listed above (yt-dlp, ffmpeg, ffprobe, websocketd).
+Download the 3 required tools listed above (yt-dlp, ffmpeg, websocketd).
 
 ### Step 3: Place Executables in Correct Folders
 
@@ -90,7 +83,6 @@ Your folder structure should look like this:
 MediaSurgeon/
 ├── bin/
 │   ├── ffmpeg.exe          ✅ Download this
-│   ├── ffprobe.exe         ✅ Download this
 │   ├── websocketd.exe      ✅ Download this
 │   ├── yt-dlp.exe          ✅ Download this
 │   └── temp/               (created automatically)
