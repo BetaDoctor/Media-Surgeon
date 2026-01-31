@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cyan: #06b6d4;
+  --color-slate: #0f172a;
+}

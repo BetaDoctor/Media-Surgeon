@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEDIA SURGEON | DOWNLOADER</title>
+    <link rel="icon" type="image/svg+xml" href="lib/favicon.svg">
+    <link rel="stylesheet" href="style.css">
+    <link href="lib/video-js.min.css" rel="stylesheet">
+    <script src="lib/video.min.js"></script>
+</head>
+<body>
+
+    <div class="theatre-core">
+        
+        <div class="main-grid">
+            
+            <!-- COMBINED HEADER + URL INTAKE -->
+            <div class="glass intake-bar">
+                <!-- Surgeon avatar in corner -->
+                <img src="lib/surgeon.png" alt="" class="surgeon-avatar">
+                
+                <!-- Supported sites in glass box (right side) -->
+                <div class="supported-sites-box">
+                    <div class="support-label">Officially supported sites</div>
+                    <div class="site-icons">
+                        <a href="https://www.xvideos.com" target="_blank" rel="noopener" title="xVideos">
+                            <img src="lib/xvideos-icon.png" alt="xVideos">
+                        </a>
+                        <a href="https://www.pornhub.com" target="_blank" rel="noopener" title="Pornhub">
+                            <img src="lib/pornhub-icon.png" alt="Pornhub">
+                        </a>
+                        <a href="https://xhamster.com" target="_blank" rel="noopener" title="xHamster">
+                            <img src="lib/xhamster-icon.png" alt="xHamster">
+                        </a>
+                        <a href="https://www.xnxx.com" target="_blank" rel="noopener" title="XNXX">
+                            <img src="lib/xnxx-icon.png" alt="XNXX">
+                        </a>
+                        <a href="https://www.youporn.com" target="_blank" rel="noopener" title="YouPorn">
+                            <img src="lib/youporn-icon.png" alt="YouPorn">
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Logo -->
+                <div class="header-logo">
+                    <img src="lib/logo.svg" alt="Media Surgeon" style="max-width: 640px; width: 100%; height: auto; display: block; margin: 0 auto;">
+                </div>
+                <!-- Buttons -->
+                <div class="intake-controls">
+                    <button class="btn-compact btn-paste" onclick="pasteUrl()">📋 PASTE URL</button>
+                    <button class="btn-compact btn-clear" onclick="clearUrl()">✕ CLEAR</button>
+                    <button class="btn-compact btn-analyze" onclick="handleIntake()">🔍 ANALYZE</button>
+                    <button id="downloadBtn" class="btn-compact btn-download hidden" onclick="executeDownload()">⬇ DOWNLOAD</button>
+                </div>
+                <!-- URL Display -->
+                <div id="urlDisplay" class="url-display">
+                    <span id="currentUrl" class="url-text"></span>
+                </div>
+            </div>
+
+            <!-- VIDEO PLAYER -->
+            <div class="glass player-container">
+                <video id="mainPlayer" class="video-js vjs-default-skin" controls preload="auto">
+                    <p class="vjs-no-js">To view this video please enable JavaScript</p>
+                </video>
+                <!-- Custom loading overlay -->
+                <div id="loadingOverlay" class="loading-overlay hidden">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Analyzing video...</div>
+                </div>
+                <!-- Video info overlay (shows on hover) -->
+                <div id="videoInfo" class="video-info-overlay hidden">
+                    <div class="info-title" id="infoTitle">—</div>
+                    <div class="info-meta">
+                        <span id="infoDuration">—</span>
+                        <span class="info-separator">•</span>
+                        <span id="infoQuality">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SYSTEM CONSOLE -->
+            <div class="glass console-panel collapsed">
+                <div class="console-header">
+                    <span class="console-title">SYSTEM STATUS</span>
+                    <div class="console-controls">
+                        <button class="console-button" onclick="clearLog()">Clear Log</button>
+                        <button class="console-button" onclick="copyLog()">Copy Log</button>
+                        <button id="collapseBtn" class="console-button" onclick="toggleConsole()">Expand</button>
+                        <span id="bridgeStatus" class="bridge-status offline">BRIDGE OFFLINE</span>
+                    </div>
+                </div>
+                <div id="statusLog" class="console-log collapsed">
+                    <div class="log-entry info">System initializing...</div>
+                </div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <script type="module">
+        /* -----------------------------------------------------------------------
+           MEDIA SURGEON DOWNLOADER CORE
+           ----------------------------------------------------------------------- */
+        import xvideos from './sectors/xvideos.js';
+        import pornhub from './sectors/pornhub.js';
+        import xhamster from './sectors/xhamster.js';
+        import xnxx from './sectors/xnxx.js';
+        import youporn from './sectors/youporn.js';
+        import general from './sectors/general.js';
+        
+        const SECTORS = { 
+            'xvideos.com': xvideos,
+            'pornhub.com': pornhub,
+            'xhamster.com': xhamster,
+            'xnxx.com': xnxx,
+            'youporn.com': youporn
+        };
+        
+        // General specialist acts as fallback for unknown sites
+        const GENERAL = general;
+        
+        let currentVideo = null;
+        let bestFormat = null;
+        let player = null;
+        let lastFragmentShown = null;
+
+        // Initialize Video.js Player
+        window.addEventListener('DOMContentLoaded', () => {
+            player = videojs('mainPlayer', {
+                controls: true,
+                autoplay: false,
+                preload: 'auto',
+                fluid: false,
+                aspectRatio: '16:9'
+            });
+        });
+
+        // WebSocket Bridge
+        const ws = new WebSocket('ws://localhost:8080/');
+        
+        ws.onopen = () => {
+            updateStatus("Bridge connected successfully", "success");
+            const statusEl = document.getElementById('bridgeStatus');
+            statusEl.textContent = 'BRIDGE ONLINE';
+            statusEl.classList.remove('offline');
+            statusEl.classList.add('online');
+        };
+        
+        ws.onerror = () => updateStatus("Bridge connection failed!", "error");
+        
+        ws.onmessage = async (event) => {
+            const raw = event.data.trim();
+            console.log("[BRIDGE]:", raw);
+            
+            if (raw.startsWith('bin\\')) return;
+            
+            const fragMatch = raw.match(/\(frag (\d+)\/(\d+)\)/);
+            if (fragMatch) {
+                const current = parseInt(fragMatch[1]);
+                const total = parseInt(fragMatch[2]);
+                const fragKey = `${current}/${total}`;
+                if (lastFragmentShown !== fragKey) {
+                    const percentage = Math.floor((current / total) * 100);
+                    updateStatus(`Downloading fragment ${current} of ${total}...`, "info");
+                    lastFragmentShown = fragKey;
+                    // Update button with fragment progress
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    if (downloadBtn && !downloadBtn.classList.contains('hidden')) {
+                        downloadBtn.textContent = `⬇ DOWNLOADING... ${percentage}%`;
+                    }
+                    // Check if all fragments done - reset button
+                    if (current === total) {
+                        setTimeout(() => {
+                            downloadBtn.textContent = '⬇ DOWNLOAD';
+                            downloadBtn.disabled = false;
+                            downloadBtn.style.opacity = '1';
+                        }, 1000);
+                    }
+                }
+                return;
+            }
+            
+            const progressMatch = raw.match(/\[download\]\s+(\d+\.\d+)%/);
+            if (progressMatch && !raw.includes('frag')) {
+                const percentage = Math.floor(parseFloat(progressMatch[1]));
+                updateStatus(`Download progress: ${percentage}%`, "info");
+                // Update button text with progress
+                const downloadBtn = document.getElementById('downloadBtn');
+                if (downloadBtn && !downloadBtn.classList.contains('hidden')) {
+                    downloadBtn.textContent = `⬇ DOWNLOADING... ${percentage}%`;
+                }
+                // Check if 100% - reset button
+                if (percentage === 100) {
+                    setTimeout(() => {
+                        downloadBtn.textContent = '⬇ DOWNLOAD';
+                        downloadBtn.disabled = false;
+                        downloadBtn.style.opacity = '1';
+                    }, 500);
+                }
+                return;
+            }
+            
+            if (raw.includes('[ffmpeg]') || raw.includes('Merging') || raw.includes('complete') || raw.includes('ERROR')) {
+                const isError = raw.toLowerCase().includes('error');
+                updateStatus(raw, isError ? "error" : "success");
+                
+                // Reset and re-enable download button
+                const downloadBtn = document.getElementById('downloadBtn');
+                if (downloadBtn && !downloadBtn.classList.contains('hidden')) {
+                    downloadBtn.textContent = '⬇ DOWNLOAD';
+                    downloadBtn.disabled = false;
+                    downloadBtn.style.opacity = '1';
+                }
+                
+                // Show error in player if extraction failed
+                if (isError) {
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                    if (player) {
+                        player.error({
+                            code: 4,
+                            message: '❌ Could not extract video'
+                        });
+                    }
+                }
+                return;
+            }
+            
+            if (raw.includes('Destination:') || raw.includes('Starting download')) {
+                updateStatus(raw, "info");
+                lastFragmentShown = null;
+                return;
+            }
+            
+            if (raw.startsWith('{')) {
+                try {
+                    const data = JSON.parse(raw);
+                    if (data._type === 'video') {
+                        handleVideoMetadata(data);
+                    }
+                } catch (e) {
+                    console.warn("[PARSE ERROR]", e);
+                }
+                return;
+            }
+            
+            if (raw.includes('[debug]') || raw.includes('[verbose]') || raw.includes('User-Agent:') || raw.includes('Cookie:')) {
+                return;
+            }
+            
+            if (raw.length > 0) {
+                updateStatus(raw, "info");
+            }
+        };
+
+        /* -----------------------------------------------------------------------
+           PASTE URL FUNCTION
+           ----------------------------------------------------------------------- */
+        window.pasteUrl = async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const url = text.trim();
+                
+                // Update URL display
+                const urlDisplay = document.getElementById('currentUrl');
+                urlDisplay.textContent = url;
+                
+                updateStatus("URL pasted from clipboard", "success");
+            } catch (err) {
+                updateStatus("Failed to read clipboard - please paste manually (Ctrl+V)", "error");
+                console.error("Clipboard error:", err);
+            }
+        };
+
+        /* -----------------------------------------------------------------------
+           CLEAR URL FUNCTION
+           ----------------------------------------------------------------------- */
+        window.clearUrl = () => {
+            const urlDisplay = document.getElementById('currentUrl');
+            urlDisplay.textContent = '';
+            
+            // Hide previous results
+            document.getElementById('videoInfo').classList.add('hidden');
+            document.getElementById('downloadBtn').classList.add('hidden');
+            
+            // Fully reset video player
+            if (player) {
+                player.pause();
+                player.reset(); // Clears src and resets player state
+            }
+            
+            // Reset video state
+            currentVideo = null;
+            bestFormat = null;
+            
+            updateStatus("URL cleared", "info");
+        };
+
+        /* -----------------------------------------------------------------------
+           INTAKE HANDLER
+           ----------------------------------------------------------------------- */
+        window.handleIntake = () => {
+            const url = document.getElementById('currentUrl').textContent.trim();
+            
+            if (!url) {
+                updateStatus("No URL provided", "error");
+                return;
+            }
+            
+            // Check if we have a dedicated specialist
+            const domain = Object.keys(SECTORS).find(d => url.includes(d));
+            
+            // Hide previous results
+            document.getElementById('videoInfo').classList.add('hidden');
+            document.getElementById('downloadBtn').classList.add('hidden');
+            
+            // Show custom loading overlay
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            
+            if (player) {
+                player.pause();
+            }
+            
+            // Choose specialist: dedicated or general fallback
+            let specialist;
+            let specialistName;
+            
+            if (domain && SECTORS[domain]) {
+                // Dedicated specialist exists
+                specialist = SECTORS[domain];
+                specialistName = domain;
+                updateStatus(`Analyzing ${domain}...`, "info");
+            } else {
+                // No dedicated specialist - use general fallback
+                specialist = GENERAL;
+                specialistName = 'unknown site (using general extraction)';
+                updateStatus(`No dedicated specialist found. Attempting general extraction...`, "info");
+                updateStatus(`⚡ Using all tricks: Cloudflare bypass, browser impersonation, format optimization`, "info");
+            }
+            
+            const cmd = specialist.getAuditCommand(url);
+            console.log("[COMMAND]:", cmd);
+            ws.send(cmd + "\n");
+        };
+
+        /* -----------------------------------------------------------------------
+           METADATA PROCESSOR
+           ----------------------------------------------------------------------- */
+        function handleVideoMetadata(data) {
+            currentVideo = data;
+            
+            // Find best MP4 format
+            const mp4Formats = data.formats.filter(f => f.ext === 'mp4' && f.vcodec !== 'none');
+            bestFormat = mp4Formats.sort((a, b) => (b.height || 0) - (a.height || 0))[0];
+            
+            if (!bestFormat) {
+                updateStatus("No compatible MP4 format found", "error");
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                if (player) {
+                    player.error({
+                        code: 4,
+                        message: '❌ Could not find video source'
+                    });
+                }
+                return;
+            }
+            
+            // Load video into player
+            if (player && bestFormat.url) {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                player.error(null); // Clear any error messages
+                player.src({
+                    type: 'video/mp4',
+                    src: bestFormat.url
+                });
+                updateStatus("Video loaded in player", "success");
+            }
+            
+            // Update metadata display
+            document.getElementById('infoTitle').textContent = data.title || 'Unknown';
+            document.getElementById('infoDuration').textContent = formatDuration(data.duration);
+            document.getElementById('infoQuality').textContent = `${bestFormat.height}p ${bestFormat.ext.toUpperCase()}`;
+            
+            // Show panels
+            document.getElementById('videoInfo').classList.remove('hidden');
+            document.getElementById('downloadBtn').classList.remove('hidden');
+            
+            updateStatus(`Ready to download: ${bestFormat.height}p ${bestFormat.ext.toUpperCase()}`, "success");
+        }
+
+        /* -----------------------------------------------------------------------
+           DOWNLOAD EXECUTOR
+           ----------------------------------------------------------------------- */
+        window.executeDownload = () => {
+            if (!currentVideo || !bestFormat) {
+                updateStatus("No video analyzed yet", "error");
+                return;
+            }
+            
+            const safeTitle = currentVideo.title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+            const filename = `${safeTitle}_${bestFormat.height}p.${bestFormat.ext}`;
+            const outputPath = `Downloads\\${filename}`;
+            const url = document.getElementById('currentUrl').textContent.trim();
+            
+            // Disable download button during download
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.disabled = true;
+            downloadBtn.style.opacity = '0.6';
+            downloadBtn.textContent = '⬇ DOWNLOADING... 0%';
+            
+            // Choose specialist: dedicated or general fallback
+            const domain = Object.keys(SECTORS).find(d => url.includes(d));
+            const specialist = (domain && SECTORS[domain]) ? SECTORS[domain] : GENERAL;
+            
+            if (specialist && specialist.getDownloadCommand) {
+                const cmd = specialist.getDownloadCommand(url, bestFormat.format_id, outputPath);
+                console.log("[DOWNLOAD]:", cmd);
+                updateStatus(`Downloading to Downloads folder: ${filename}`, "info");
+                ws.send(cmd + "\n");
+            } else {
+                // Ultimate fallback (should never happen)
+                const cmd = `bin\\yt-dlp.exe -f ${bestFormat.format_id} -o "${outputPath}" --no-check-certificates "${url}"`;
+                console.log("[DOWNLOAD]:", cmd);
+                updateStatus(`Downloading to Downloads folder: ${filename}`, "info");
+                ws.send(cmd + "\n");
+            }
+        };
+
+        /* -----------------------------------------------------------------------
+           UTILITIES
+           ----------------------------------------------------------------------- */
+        function updateStatus(message, type = "info") {
+            const log = document.getElementById('statusLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.insertBefore(entry, log.firstChild); // Prepend - newest on top
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return 'Unknown';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return h > 0 
+                ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+                : `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function formatFilesize(bytes) {
+            if (!bytes) return 'Unknown';
+            const mb = bytes / 1024 / 1024;
+            return mb >= 1000 
+                ? `${(mb / 1024).toFixed(2)} GB`
+                : `${mb.toFixed(2)} MB`;
+        }
+
+        window.clearLog = () => {
+            const log = document.getElementById('statusLog');
+            log.innerHTML = '<div class="log-entry info">Log cleared</div>';
+            updateStatus("Ready", "info");
+        };
+
+        window.copyLog = () => {
+            const log = document.getElementById('statusLog');
+            const logText = Array.from(log.children)
+                .map(entry => entry.textContent)
+                .join('\n');
+            
+            navigator.clipboard.writeText(logText).then(() => {
+                updateStatus("Log copied to clipboard", "success");
+            }).catch(err => {
+                updateStatus("Failed to copy log", "error");
+                console.error('Copy failed:', err);
+            });
+        };
+
+        window.toggleConsole = () => {
+            const log = document.getElementById('statusLog');
+            const panel = log.closest('.console-panel');
+            const btn = document.getElementById('collapseBtn');
+            
+            if (log.classList.contains('collapsed')) {
+                log.classList.remove('collapsed');
+                panel.classList.remove('collapsed');
+                btn.textContent = 'Collapse';
+            } else {
+                log.classList.add('collapsed');
+                panel.classList.add('collapsed');
+                btn.textContent = 'Expand';
+            }
+        };
+
+        // Optional: Ctrl+V anywhere to paste
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                // Let browser handle normal paste in inputs, but we could trigger pasteUrl() if needed
+            }
+        });
+    </script>
+</body>
+</html>
