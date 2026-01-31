@@ -13,7 +13,7 @@ MediaSurgeon is a self-contained, web-based video downloader that uses intellige
 - **⚡ WebSocket Bridge**: Live communication between browser and backend
 - **📦 Portable**: Runs from any location - USB drive, network share, local folder
 - **🔧 No Installation**: No registry changes, no system dependencies
-- **🎨 Custom Styling**: Tailwind CSS-powered responsive design
+- **🎨 Custom Styling**: Responsive glass-morphism cyberpunk design
 
 ---
 ## 🎯 Supported Sites
@@ -65,15 +65,6 @@ MediaSurgeon requires **4 executable tools** to function. These are **NOT includ
 - **Extract**: `websocketd.exe`
 - **Location**: Place in `bin/` folder
 
-#### 5. **Tailwind CSS CLI** (Styling - Optional)
-- **Purpose**: CSS framework (only needed for development)
-- **Size**: ~126 MB
-- **Download**: [https://github.com/tailwindlabs/tailwindcss/releases](https://github.com/tailwindlabs/tailwindcss/releases)
-- **Get**: Download `tailwindcss-windows-x64.exe`
-- **Rename**: Rename to `tailwindcss.exe`
-- **Location**: Place in `lib/` folder
-- **Note**: Only required if you want to modify the styling
-
 ---
 
 ## 🚀 Setup Instructions
@@ -102,9 +93,8 @@ MediaSurgeon/
 │   ├── ffprobe.exe         ✅ Download this
 │   ├── websocketd.exe      ✅ Download this
 │   ├── yt-dlp.exe          ✅ Download this
-│   └── temp/               (create manually and grant users write permission)
+│   └── temp/               (created automatically)
 ├── lib/
-│   ├── tailwindcss.exe     ⚠️ Optional (dev only)
 │   ├── favicon.svg
 │   ├── logo.svg
 │   ├── video.min.js
@@ -129,7 +119,7 @@ MediaSurgeon/
 This will:
 1. Launch the web interface in your browser (`http://localhost:8080`)
 2. Start the WebSocket bridge on port 8080
-3. Open a command window showing real-time activity (collapsed by default)
+3. Open a command window showing real-time activity
 
 ---
 
@@ -139,7 +129,7 @@ This will:
 2. **Paste a video URL** in the web interface
 3. MediaSurgeon automatically **detects the site** and uses the appropriate specialist
 4. **View available formats** (resolutions, file sizes)
-5. **Click download** to start extraction (a Downloads folder we be created in the root of the project)
+5. **Click download** to start extraction (a Downloads folder will be created in the root of the project)
 6. **Watch progress** in real-time (fragment counts, percentage)
 
 ---
@@ -166,11 +156,13 @@ Each supported site has a custom "specialist" (JavaScript module) that:
 - Maximizes success rate and video quality
 - Falls back to general specialist for unknown sites
 
+---
+
 ## 🛠️ Troubleshooting
 
 ### "Command not found" or "Not recognized"
 - ✅ Check that all `.exe` files are in the `bin/` folder
-- ✅ Don't rename the files (except tailwindcss)
+- ✅ Don't rename the files
 - ✅ Make sure you downloaded the Windows versions
 
 ### Port 8080 Already in Use
@@ -194,12 +186,7 @@ Each supported site has a custom "specialist" (JavaScript module) that:
 
 ### Modifying Styles
 
-If you want to customize the appearance:
-
-1. Download `tailwindcss.exe` and place in `lib/` folder
-2. Edit `lib/tailwind-input.css` with your custom styles
-3. Run: `lib\tailwindcss.exe -i lib\tailwind-input.css -o lib\tailwind-output.css`
-4. Refresh the browser to see changes
+To customize the appearance, simply edit `style.css` and refresh your browser to see changes.
 
 ### Adding New Specialists
 
@@ -236,7 +223,6 @@ This project is provided as-is for educational and personal use.
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) - Video extraction engine
 - [FFmpeg](https://ffmpeg.org/) - Video processing
 - [websocketd](https://github.com/joewalnes/websocketd) - WebSocket bridge
-- [Tailwind CSS](https://tailwindcss.com/) - Styling framework
 - [Video.js](https://videojs.com/) - Video player components
 
 ---
